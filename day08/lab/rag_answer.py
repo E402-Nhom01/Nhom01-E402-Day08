@@ -33,14 +33,14 @@ load_dotenv()
 # CẤU HÌNH
 # =============================================================================
 
-TOP_K_SEARCH = 15    # Số chunk lấy từ vector store trước rerank (search rộng)
-TOP_K_SELECT = 4     # Số chunk gửi vào prompt sau rerank/select (top-3 sweet spot)
+TOP_K_SEARCH = 10    # Số chunk lấy từ vector store trước rerank (search rộng)
+TOP_K_SELECT = 3    # Số chunk gửi vào prompt sau rerank/select (top-3 sweet spot)
 
 def _tokenize(text: str) -> List[str]:
     return re.findall(r"\w+", (text or "").lower())
 
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
-#load model
+#load model vào biến toàn cục để tái sử dụng trong rerank nếu cần
 
 # =============================================================================
 # RETRIEVAL — DENSE (Vector Search)
