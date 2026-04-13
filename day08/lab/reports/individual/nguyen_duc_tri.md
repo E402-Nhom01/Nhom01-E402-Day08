@@ -38,10 +38,10 @@ _________________
 
 > Câu hỏi: q09 — "ERR-403-AUTH là lỗi gì và cách xử lý?"
 Phân tích:
-Đây là câu hỏi kiểm tra khả năng abstain — thông tin về mã lỗi ERR-403-AUTH không tồn tại trong bất kỳ tài liệu nào trong corpus.
-Baseline (dense): Dense retrieval trả về các chunk từ IT Helpdesk FAQ có chứa từ "đăng nhập", "tài khoản bị khóa" — semantic gần với "auth error" nhưng không phải ERR-403-AUTH. Nếu prompt không đủ mạnh, model sẽ suy diễn từ các chunk này và bịa ra câu trả lời. Điểm Faithfulness thấp nếu model hallucinate.
-Lỗi nằm ở: Generation — retriever đúng khi trả về chunk liên quan nhất có thể, nhưng generation phải nhận ra rằng không chunk nào thực sự chứa "ERR-403-AUTH" và abstain. Đây là bài test cho grounded prompt design.
-Variant (hybrid + rerank): Rerank giúp vì cross-encoder chấm lại relevance chính xác hơn — score thấp cho chunk chỉ "gần nghĩa" nhưng không match. Kết hợp với prompt anti-hallucination mạnh, variant abstain đúng: "Không tìm thấy thông tin về ERR-403-AUTH trong tài liệu hiện có."
+Đây là dạng câu hỏi dùng để kiểm tra khả năng abstain. Trong corpus không hề có thông tin về mã lỗi ERR-403-AUTH.
+Baseline (dense): Dense retrieval vẫn trả về các chunk từ IT Helpdesk FAQ liên quan đến “đăng nhập” hoặc “tài khoản bị khóa”. Những nội dung này có liên quan về mặt ngữ nghĩa với lỗi xác thực (auth error) nhưng không đề cập trực tiếp đến ERR-403-AUTH. Nếu prompt không đủ chặt, model dễ suy diễn và tạo ra câu trả lời không có trong dữ liệu, dẫn đến giảm độ faithfulness.
+Vấn đề chính: Nằm ở bước generation. Retriever đã làm đúng nhiệm vụ (lấy các chunk gần nhất), nhưng model cần nhận ra rằng không có bằng chứng cụ thể và phải từ chối trả lời.
+Variant (hybrid + rerank): Rerank bằng cross-encoder giúp đánh giá lại độ liên quan chính xác hơn, loại bỏ các chunk chỉ “gần nghĩa”. Kết hợp với prompt chống hallucination, hệ thống có thể trả lời đúng theo hướng: không có thông tin trong tài liệu.
 _________________
 
 ---
