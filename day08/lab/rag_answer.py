@@ -68,16 +68,17 @@ def retrieve_dense(query: str, top_k: int = TOP_K_SEARCH) -> List[Dict[str, Any]
 
     for doc, meta, dist in zip(docs, metas, distances):
         score = 1 - dist  # cosine similarity
-
-        retrieved.append({
-            "text": doc,
-            "metadata": meta,
-            "score": score
-        })
+        if score > 0.36:
+            retrieved.append({
+                "text": doc,
+                "metadata": meta,
+                "score": score
+            })
 
     return retrieved
 
-
+    print(scores)
+    print(retrieved)
 
 # =============================================================================
 # RETRIEVAL — SPARSE / BM25 (Keyword Search)
