@@ -33,6 +33,7 @@ CHROMA_DB_DIR = Path(__file__).parent / "chroma_db"
 # Gợi ý từ slide: chunk 300-500 tokens, overlap 50-80 tokens
 CHUNK_SIZE = 400       # tokens (ước lượng bằng số ký tự / 4)
 CHUNK_OVERLAP = 80     # tokens overlap giữa các chunk
+MIN_SECTION_CHARS = 300  # Section ngắn hơn sẽ merge với section kế tiếp
 
 from sentence_transformers import SentenceTransformer
 
@@ -142,36 +143,59 @@ def chunk_document(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
     base_metadata = doc["metadata"].copy()
     chunks = []
 
-    # TODO: Implement chunking theo section heading
-    # Bước 1: Split theo heading pattern "=== ... ==="
-    sections = re.split(r"(===.*?===)", text)
+    # Document preamble — giúp embedding hiểu context tài liệu
+    source = base_metadata.get("source", "")
+    eff_date = base_metadata.get("effective_date", "")
+    doc_preamble = f"[Tài liệu: {source}"
+    if eff_date and eff_date != "unknown":
+        doc_preamble += f" | Hiệu lực: {eff_date}"
+    doc_preamble += "]"
 
-    current_section = "General"
-    current_section_text = ""
+    # Bước 1: Parse sections từ heading pattern "=== ... ==="
+    raw_sections = re.split(r"(===.*?===)", text)
+    parsed = []  # list of (heading, text)
+    current_heading = "General"
+    current_text = ""
 
-    for part in sections:
+    for part in raw_sections:
         if re.match(r"===.*?===", part):
-            # Lưu section trước (nếu có nội dung)
-            if current_section_text.strip():
-                section_chunks = _split_by_size(
-                    current_section_text.strip(),
-                    base_metadata=base_metadata,
-                    section=current_section,
-                )
-                chunks.extend(section_chunks)
-            # Bắt đầu section mới
-            current_section = part.strip("= ").strip()
-            current_section_text = ""
+            if current_text.strip():
+                parsed.append((current_heading, current_text.strip()))
+            current_heading = part.strip("= ").strip()
+            current_text = ""
         else:
-            current_section_text += part
+            current_text += part
 
-    # Lưu section cuối cùng
-    if current_section_text.strip():
+    if current_text.strip():
+        parsed.append((current_heading, current_text.strip()))
+
+    # Bước 2: Merge section ngắn (< MIN_SECTION_CHARS) với section kế tiếp
+    # Ví dụ: Section 1 "Phạm vi" (180 chars) + Section 2 "Phân cấp quyền"
+    # → 1 chunk chứa cả scope + chi tiết level
+    merged = []
+    i = 0
+    while i < len(parsed):
+        heading, sec_text = parsed[i]
+        if len(sec_text) < MIN_SECTION_CHARS and i + 1 < len(parsed):
+            next_heading, next_text = parsed[i + 1]
+            merged.append((
+                f"{heading} | {next_heading}",
+                f"{sec_text}\n\n{next_text}",
+            ))
+            i += 2
+        else:
+            merged.append((heading, sec_text))
+            i += 1
+
+    # Bước 3: Chunk mỗi section, prepend preamble vào mỗi chunk
+    for heading, sec_text in merged:
         section_chunks = _split_by_size(
-            current_section_text.strip(),
+            sec_text,
             base_metadata=base_metadata,
-            section=current_section,
+            section=heading,
         )
+        for chunk in section_chunks:
+            chunk["text"] = f"{doc_preamble}\n{chunk['text']}"
         chunks.extend(section_chunks)
 
     return chunks
