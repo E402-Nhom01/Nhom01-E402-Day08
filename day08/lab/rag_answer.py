@@ -40,7 +40,7 @@ def _tokenize(text: str) -> List[str]:
     return re.findall(r"\w+", (text or "").lower())
 
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
-
+#load model
 
 # =============================================================================
 # RETRIEVAL — DENSE (Vector Search)
