@@ -287,45 +287,100 @@ TOOL_REGISTRY = {
 }
 
 
-def list_tools() -> list:
+def list_tools(verbose: bool = False) -> list:
     """
-    MCP discovery: trả về danh sách tools có sẵn.
-    Tương đương với `tools/list` trong MCP protocol.
+    Return tool schemas (MCP discovery).
     """
-    return list(TOOL_SCHEMAS.values())
+    if verbose:
+        return TOOL_SCHEMAS
+    return [
+        {
+            "name": t["name"],
+            "description": t["description"],
+        }
+        for t in TOOL_SCHEMAS.values()
+    ]
 
+
+def _validate_input(tool_name: str, tool_input: dict) -> Optional[dict]:
+    """
+    Validate input against TOOL_SCHEMAS (basic check, not full JSON Schema).
+    """
+    schema = TOOL_SCHEMAS[tool_name]["inputSchema"]
+    required_fields = schema.get("required", [])
+    properties = schema.get("properties", {})
+
+    # Check required fields
+    for field in required_fields:
+        if field not in tool_input:
+            return {
+                "error": f"Missing required field '{field}' for tool '{tool_name}'",
+                "expected_schema": schema,
+            }
+
+    # Type check (simple)
+    for key, value in tool_input.items():
+        if key not in properties:
+            return {
+                "error": f"Unexpected field '{key}' for tool '{tool_name}'",
+                "expected_fields": list(properties.keys()),
+            }
+
+        expected_type = properties[key].get("type")
+        if expected_type:
+            if expected_type == "string" and not isinstance(value, str):
+                return {"error": f"Field '{key}' must be string"}
+            if expected_type == "integer" and not isinstance(value, int):
+                return {"error": f"Field '{key}' must be integer"}
+            if expected_type == "boolean" and not isinstance(value, bool):
+                return {"error": f"Field '{key}' must be boolean"}
+
+    return None
 
 def dispatch_tool(tool_name: str, tool_input: dict) -> dict:
     """
-    MCP execution: nhận tool_name và input, gọi tool tương ứng.
-    Tương đương với `tools/call` trong MCP protocol.
-
-    Args:
-        tool_name: tên tool (phải có trong TOOL_REGISTRY)
-        tool_input: input dict (phải match với tool's inputSchema)
-
-    Returns:
-        Tool output dict, hoặc error dict nếu thất bại
+    MCP execution: gọi tool theo tên + input.
     """
+
+    # 1. Tool existence check
     if tool_name not in TOOL_REGISTRY:
         return {
-            "error": f"Tool '{tool_name}' không tồn tại. Available: {list(TOOL_REGISTRY.keys())}"
+            "error": f"Tool '{tool_name}' không tồn tại.",
+            "available_tools": list(TOOL_REGISTRY.keys()),
         }
+
+    # 2. Input validation
+    validation_error = _validate_input(tool_name, tool_input)
+    if validation_error:
+        return validation_error
 
     tool_fn = TOOL_REGISTRY[tool_name]
+
     try:
+        # 3. Execute tool
         result = tool_fn(**tool_input)
-        return result
-    except TypeError as e:
+
+        # 4. Normalize output
         return {
-            "error": f"Invalid input for tool '{tool_name}': {e}",
-            "schema": TOOL_SCHEMAS[tool_name]["inputSchema"],
-        }
-    except Exception as e:
-        return {
-            "error": f"Tool '{tool_name}' execution failed: {e}",
+            "tool_name": tool_name,
+            "success": True,
+            "data": result,
         }
 
+    except TypeError as e:
+        return {
+            "tool_name": tool_name,
+            "success": False,
+            "error": f"Invalid arguments: {e}",
+            "expected_schema": TOOL_SCHEMAS[tool_name]["inputSchema"],
+        }
+
+    except Exception as e:
+        return {
+            "tool_name": tool_name,
+            "success": False,
+            "error": f"Execution failed: {str(e)}",
+        }
 
 # ─────────────────────────────────────────────
 # Test & Demo
@@ -344,8 +399,10 @@ if __name__ == "__main__":
     # 2. Test search_kb
     print("\n🔍 Test: search_kb")
     result = dispatch_tool("search_kb", {"query": "SLA P1 resolution time", "top_k": 2})
-    if result.get("chunks"):
-        for c in result["chunks"]:
+    data = result.get("data", {})
+
+    if data.get("chunks"):
+        for c in data["chunks"]:
             print(f"  [{c.get('score', '?')}] {c.get('source')}: {c.get('text', '')[:70]}...")
     else:
         print(f"  Result: {result}")
@@ -353,7 +410,9 @@ if __name__ == "__main__":
     # 3. Test get_ticket_info
     print("\n🎫 Test: get_ticket_info")
     ticket = dispatch_tool("get_ticket_info", {"ticket_id": "P1-LATEST"})
-    print(f"  Ticket: {ticket.get('ticket_id')} | {ticket.get('priority')} | {ticket.get('status')}")
+    data = ticket.get("data", {})
+
+    print(f"  Ticket: {data.get('ticket_id')} | {data.get('priority')} | {data.get('status')}")
     if ticket.get("notifications_sent"):
         print(f"  Notifications: {ticket['notifications_sent']}")
 
@@ -364,10 +423,12 @@ if __name__ == "__main__":
         "requester_role": "contractor",
         "is_emergency": True,
     })
-    print(f"  can_grant: {perm.get('can_grant')}")
-    print(f"  required_approvers: {perm.get('required_approvers')}")
-    print(f"  emergency_override: {perm.get('emergency_override')}")
-    print(f"  notes: {perm.get('notes')}")
+    data = perm.get("data", {})
+
+    print(f"  can_grant: {data.get('can_grant')}")
+    print(f"  required_approvers: {data.get('required_approvers')}")
+    print(f"  emergency_override: {data.get('emergency_override')}")
+    print(f"  notes: {data.get('notes')}")
 
     # 5. Test invalid tool
     print("\n❌ Test: invalid tool")
