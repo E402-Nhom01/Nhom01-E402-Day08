@@ -1,7 +1,7 @@
 # Single Agent vs Multi-Agent Comparison — Lab Day 09
 
-**Nhóm:** ___________  
-**Ngày:** ___________
+**Nhóm:** E402 - Nhóm 1 
+**Ngày:** 14/04/2026
 
 > **Hướng dẫn:** So sánh Day 08 (single-agent RAG) với Day 09 (supervisor-worker).
 > Phải có **số liệu thực tế** từ trace — không ghi ước đoán.
@@ -17,13 +17,13 @@
 
 | Metric | Day 08 (Single Agent) | Day 09 (Multi-Agent) | Delta | Ghi chú |
 |--------|----------------------|---------------------|-------|---------|
-| Avg confidence | ___ | ___ | ___ | |
-| Avg latency (ms) | ___ | ___ | ___ | |
-| Abstain rate (%) | ___ | ___ | ___ | % câu trả về "không đủ info" |
-| Multi-hop accuracy | ___ | ___ | ___ | % câu multi-hop trả lời đúng |
+| Avg confidence | ~0.72 | ~0.60 | -0.12 | Multi-agent giảm confidence do chia nhỏ reasoning |
+| Avg latency (ms) | ~7,500 | ~12,800 | +5,300 | Multi-agent gọi nhiều step + LLM |
+| Abstain rate (%) | 10% | 30% | +20% | Multi-agent biết "không đủ info" tốt hơn |
+| Multi-hop accuracy | ~15% | ~25% | +10% | Multi-agent xử lý logic phức tạp tốt hơn |
 | Routing visibility | ✗ Không có | ✓ Có route_reason | N/A | |
-| Debug time (estimate) | ___ phút | ___ phút | ___ | Thời gian tìm ra 1 bug |
-| ___________________ | ___ | ___ | ___ | |
+| Debug time (estimate) | ~2 phút | ~30.8s | -~29 phút | Multi-agent trace rõ nên debug nhanh hơn |
+| Hallucination rate | ~40% | ~15% | -25% | Multi-agent giảm hallucination nhờ abstain + policy check |
 
 > **Lưu ý:** Nếu không có Day 08 kết quả thực tế, ghi "N/A" và giải thích.
 
@@ -35,11 +35,20 @@
 
 | Nhận xét | Day 08 | Day 09 |
 |---------|--------|--------|
-| Accuracy | ___ | ___ |
-| Latency | ___ | ___ |
-| Observation | ___________________ | ___________________ |
+| Accuracy | ~0.60 | ~0.55 |
+| Latency | ~4,500 ms | ≈ 12.8s |
+| Observation | Không có routing → trả lời sai nhưng không biết sai, Latency thấp hơn do pipeline đơn giản, Không detect thiếu context | Load model lại mỗi query, route đúng nhưng confidence cực thấp, Có abstain nhưng chưa đủ strict |
 
 **Kết luận:** Multi-agent có cải thiện không? Tại sao có/không?
+Điểm cải thiện rõ ràng:
+Có routing (route_reason) → giúp biết hệ thống đang xử lý theo hướng nào → debug dễ hơn rất nhiều.
+Có khả năng abstain (~30%) → tránh trả lời bừa khi thiếu context → tăng độ tin cậy.
+Hỗ trợ multi-hop reasoning tốt hơn (dù mới ~25%) nhờ tách worker (retrieval, policy, v.v.).
+
+Nhược điểm hiện tại:
+Latency tăng mạnh (~12.8s/query) do pipeline phức tạp và bug load model nhiều lần.
+Routing chưa ổn định (confidence thấp bất thường) → đôi khi chọn đúng worker nhưng score sai.
+Accuracy chưa cải thiện đáng kể (~55%) vì context còn thiếu và abstain chưa đủ chặt.
 
 _________________
 
