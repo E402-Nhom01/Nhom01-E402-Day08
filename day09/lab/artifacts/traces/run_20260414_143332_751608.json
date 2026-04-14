@@ -1,0 +1,60 @@
+{
+  "task": "ERR-403-AUTH là lỗi gì?",
+  "route_reason": "unknown error code 'err-403-auth', no supporting context → HITL | human approved → retrieval",
+  "risk_high": true,
+  "needs_tool": false,
+  "hitl_triggered": true,
+  "retrieved_chunks": [],
+  "retrieved_sources": [],
+  "policy_result": {},
+  "mcp_tools_used": [],
+  "final_answer": "Không đủ thông tin trong tài liệu nội bộ.",
+  "sources": [],
+  "confidence": 0.1,
+  "history": [
+    "[supervisor] received task: ERR-403-AUTH là lỗi gì?",
+    "[supervisor] route=human_review | reason=unknown error code 'err-403-auth', no supporting context → HITL",
+    "[human_review] HITL triggered — awaiting human input",
+    "[retrieval_worker] no results → possible retrieval failure",
+    "[retrieval_worker] retrieved 0 chunks from []",
+    "[synthesis_worker] answer generated, confidence=0.1, sources=[]",
+    "[graph] completed in 14115ms"
+  ],
+  "workers_called": [
+    "human_review",
+    "retrieval_worker",
+    "synthesis_worker"
+  ],
+  "supervisor_route": "retrieval_worker",
+  "latency_ms": 14115,
+  "run_id": "run_20260414_143332_751608",
+  "retrieval_confidence": 0.0,
+  "worker_io_logs": [
+    {
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "ERR-403-AUTH là lỗi gì?",
+        "top_k": 3
+      },
+      "output": {
+        "chunks_count": 0,
+        "sources": []
+      },
+      "error": null
+    },
+    {
+      "worker": "synthesis_worker",
+      "input": {
+        "task": "ERR-403-AUTH là lỗi gì?",
+        "chunks_count": 0,
+        "has_policy": false
+      },
+      "output": {
+        "answer_length": 41,
+        "sources": [],
+        "confidence": 0.1
+      },
+      "error": null
+    }
+  ]
+}
