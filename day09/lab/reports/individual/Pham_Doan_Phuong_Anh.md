@@ -1,8 +1,8 @@
 # Báo Cáo Cá Nhân — Lab Day 09: Multi-Agent Orchestration
 
-**Họ và tên:** ___________  
-**Vai trò trong nhóm:** Supervisor Owner / Worker Owner / MCP Owner / Trace & Docs Owner  
-**Ngày nộp:** ___________  
+**Họ và tên:** Phạm Đoàn Phương Anh 
+**Vai trò trong nhóm:** Worker Owner
+**Ngày nộp:** 14/04/2026  
 **Độ dài yêu cầu:** 500–800 từ
 
 ---
@@ -18,112 +18,188 @@
 
 ## 1. Tôi phụ trách phần nào? (100–150 từ)
 
-> Mô tả cụ thể module, worker, contract, hoặc phần trace bạn trực tiếp làm.
-> Không chỉ nói "tôi làm Sprint X" — nói rõ file nào, function nào, quyết định nào.
+1. Tôi phụ trách phần nào?
 
-**Module/file tôi chịu trách nhiệm:**
-- File chính: `___________________`
-- Functions tôi implement: `___________________`
+Trong lab này, tôi đảm nhận vai trò Worker Owner, chịu trách nhiệm chính cho việc triển khai, chạy thử và debug các worker trong pipeline gồm: policy_tool_worker, retrieval_worker và synthesis_worker.
 
-**Cách công việc của tôi kết nối với phần của thành viên khác:**
+Module/file tôi chịu trách nhiệm chính là:
 
-_________________
+File chính: workers/policy_tool.py
+Ngoài ra có tham gia debug: workers/retrieval.py, workers/synthesis.py
 
-**Bằng chứng (commit hash, file có comment tên bạn, v.v.):**
+Các function tôi trực tiếp implement:
 
-_________________
+analyze_policy(): logic hybrid giữa LLM và rule-based
+_analyze_policy_llm(): gọi LLM để phân tích policy
+_analyze_policy_rules(): fallback rule-based
+run(): entry point của worker, xử lý state và gọi MCP khi cần
+
+Worker của tôi nhận input từ retrieval_worker (retrieved_chunks) và trả về policy_result để synthesis_worker tổng hợp câu trả lời cuối.
+
+Ngoài ra, tôi cũng viết thêm:
+
+HTTP server cho MCP (mcp_server.py)
+UI đơn giản bằng Gradio để visualize pipeline và log
+
+Cách phần của tôi kết nối với team:
+
+Nhận state["retrieved_chunks"] từ retrieval
+Trả state["policy_result"] cho synthesis
+Khi thiếu dữ liệu → gọi MCP (search_kb, get_ticket_info)
+
+Bằng chứng:
+
+File workers/policy_tool.py có toàn bộ logic worker
+Log debug:
+[DEBUG] LLM RAW OUTPUT:
+{ "policy_applies": false, "exceptions_found": [...] }
+worker_io_logs trong state:
+{
+  "worker": "policy_tool_worker",
+  "output": {
+    "policy_applies": false,
+    "exceptions_count": 1
+  }
+}
 
 ---
 
 ## 2. Tôi đã ra một quyết định kỹ thuật gì? (150–200 từ)
 
-> Chọn **1 quyết định** bạn trực tiếp đề xuất hoặc implement trong phần mình phụ trách.
-> Giải thích:
-> - Quyết định là gì?
-> - Các lựa chọn thay thế là gì?
-> - Tại sao bạn chọn cách này?
-> - Bằng chứng từ code/trace cho thấy quyết định này có effect gì?
+Tôi chọn thiết kế hybrid policy analysis (LLM + rule-based fallback) thay vì chỉ dùng LLM.
 
-**Quyết định:** ___________________
+Các lựa chọn thay thế:
 
-**Ví dụ:**
-> "Tôi chọn dùng keyword-based routing trong supervisor_node thay vì gọi LLM để classify.
->  Lý do: keyword routing nhanh hơn (~5ms vs ~800ms) và đủ chính xác cho 5 categories.
->  Bằng chứng: trace gq01 route_reason='task contains P1 SLA keyword', latency=45ms."
+Chỉ dùng LLM → dễ implement nhưng không ổn định
+Chỉ dùng rule-based → nhanh nhưng thiếu linh hoạt
+Hybrid (LLM + rule) → phức tạp hơn nhưng robust hơn
 
-**Lý do:**
+Lý do tôi chọn hybrid:
 
-_________________
+LLM có thể hiểu context phức tạp nhưng:
+đôi khi hallucinate
+đôi khi trả JSON sai format
+Rule-based giúp:
+enforce các luật cứng (Flash Sale, digital product)
+đảm bảo không vi phạm policy critical
 
-**Trade-off đã chấp nhận:**
+Trade-off đã chấp nhận:
 
-_________________
+Code phức tạp hơn (2 layer logic)
+Phải maintain consistency giữa LLM và rules
+Tăng latency nhẹ (LLM call + fallback check)
 
-**Bằng chứng từ trace/code:**
+Bằng chứng từ code:
 
+# HARD RULE: 
 ```
-[PASTE ĐOẠN CODE HOẶC TRACE RELEVANT VÀO ĐÂY]
+exceptions → NO refund
+if llm_result.get("exceptions_found"):
+    llm_result["policy_applies"] = False
+    llm_result["confidence"] = max(llm_result.get("confidence", 0), 0.85)
+
+# Fallback if LLM weak
+if llm_result.get("confidence", 0) < 0.6:
+    rule_result = _analyze_policy_rules(task, chunks)
+
+    if rule_result["exceptions_found"]:
+        llm_result["exceptions_found"] = rule_result["exceptions_found"]
+        llm_result["policy_applies"] = False
+        llm_result["confidence"] = 0.8
 ```
+
+Effect trong trace:
+
+Các case như “Flash Sale” luôn bị chặn đúng:
+exception: flash_sale_exception — Đơn hàng Flash Sale không được hoàn tiền.
+policy_applies: False
+Khi LLM không chắc → rule override giúp tăng accuracy
 
 ---
 
 ## 3. Tôi đã sửa một lỗi gì? (150–200 từ)
 
-> Mô tả 1 bug thực tế bạn gặp và sửa được trong lab hôm nay.
-> Phải có: mô tả lỗi, symptom, root cause, cách sửa, và bằng chứng trước/sau.
+Lỗi: MCP không được gọi trong pipeline → mcp_hit_rate = 0
 
-**Lỗi:** ___________________
+Symptom:
 
-**Symptom (pipeline làm gì sai?):**
+Khi chạy test_questions.json, log cho thấy:
+mcp_hit_rate = 0
+mcp_tools_used = []
+Pipeline vẫn chạy và trả lời đúng nhiều câu, nhưng:
+không sử dụng external tool
+không đúng yêu cầu multi-agent + MCP
 
-_________________
+Root cause:
 
-**Root cause (lỗi nằm ở đâu — indexing, routing, contract, worker logic?):**
+Trong policy_tool_worker.run():
+needs_tool = state.get("needs_tool", False)
+Nhưng upstream (supervisor) không set needs_tool = True
+→ dẫn đến block này không bao giờ chạy:
+if not chunks and needs_tool:
+    mcp_result = dispatch_tool("search_kb", ...)
 
-_________________
+Cách sửa:
 
-**Cách sửa:**
+Fix 1: Update logic để gọi MCP khi thiếu chunks, không phụ thuộc hoàn toàn vào needs_tool
+Fix 2: Debug cùng teammate (Trương Minh Tiền) để đảm bảo supervisor set đúng flag
 
-_________________
+Ví dụ fix:
 
-**Bằng chứng trước/sau:**
-> Dán trace/log/output trước khi sửa và sau khi sửa.
+if not chunks:
+    from mcp_server import dispatch_tool
+    mcp_result = dispatch_tool("search_kb", {"query": task, "top_k": 3})
 
-_________________
+Bằng chứng trước/sau:
+
+Trước:
+
+mcp_hit_rate = 0
+mcp_tools_used = []
+
+Sau:
+
+mcp_tools_used = [
+  {"tool": "search_kb", "status": "success"}
+]
+Trace cho thấy worker đã gọi MCP:
+"MCP calls: 1"
+
 
 ---
 
 ## 4. Tôi tự đánh giá đóng góp của mình (100–150 từ)
 
-> Trả lời trung thực — không phải để khen ngợi bản thân.
+Tôi làm tốt nhất ở việc debug end-to-end pipeline. Tôi không chỉ viết policy worker mà còn chạy toàn bộ hệ thống, đọc trace và phát hiện lỗi liên quan đến integration (MCP không được gọi). Ngoài ra, tôi chủ động viết thêm UI bằng Gradio để quan sát pipeline, giúp debug nhanh hơn.
 
-**Tôi làm tốt nhất ở điểm nào?**
+Điểm tôi chưa tốt là phụ thuộc vào upstream (supervisor) khá nhiều. Khi supervisor không set đúng flag (needs_tool), worker của tôi không hoạt động đúng, cho thấy tôi chưa thiết kế đủ defensive.
 
-_________________
+Nhóm phụ thuộc vào tôi ở phần:
 
-**Tôi làm chưa tốt hoặc còn yếu ở điểm nào?**
+Policy reasoning (nếu sai → output sai toàn bộ)
+MCP integration (nếu không chạy → mất điểm phần orchestration)
 
-_________________
+Phần tôi phụ thuộc vào người khác:
 
-**Nhóm phụ thuộc vào tôi ở đâu?** _(Phần nào của hệ thống bị block nếu tôi chưa xong?)_
-
-_________________
-
-**Phần tôi phụ thuộc vào thành viên khác:** _(Tôi cần gì từ ai để tiếp tục được?)_
-
-_________________
+Supervisor phải route đúng + set state đúng
+Retrieval phải trả chunks chất lượng
 
 ---
 
 ## 5. Nếu có thêm 2 giờ, tôi sẽ làm gì? (50–100 từ)
 
-> Nêu **đúng 1 cải tiến** với lý do có bằng chứng từ trace hoặc scorecard.
-> Không phải "làm tốt hơn chung chung" — phải là:
-> *"Tôi sẽ thử X vì trace của câu gq___ cho thấy Y."*
+Tôi sẽ cải thiện MCP trigger logic trong supervisor thay vì để worker tự quyết định.
 
-_________________
+Lý do:
+
+Trace cho thấy mcp_hit_rate = 0 ban đầu → vấn đề nằm ở orchestration, không phải worker
+Nếu supervisor detect tốt khi nào cần tool (ví dụ: thiếu context, low confidence), pipeline sẽ đúng nghĩa multi-agent hơn
+
+Cụ thể: thêm rule như:
+
+if retrieval_score < threshold → needs_tool = True
+
+Điều này sẽ giúp tăng mcp_hit_rate và improve score phần orchestration.
+
 
 ---
-
-*Lưu file này với tên: `reports/individual/[ten_ban].md`*  
-*Ví dụ: `reports/individual/nguyen_van_a.md`*
