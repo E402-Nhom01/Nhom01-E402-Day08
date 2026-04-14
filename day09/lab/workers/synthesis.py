@@ -123,31 +123,57 @@ def synthesize(task: str, chunks: list, policy_result: dict) -> dict:
     Returns:
         {"answer": str, "sources": list, "confidence": float}
     """
+
+    # ✅ HARD GUARD: no chunks → abstain immediately (avoid hallucination)
+    if not chunks:
+        return {
+            "answer": "Không đủ thông tin trong tài liệu nội bộ.",
+            "sources": [],
+            "confidence": 0.1,
+        }
+
     context = _build_context(chunks, policy_result)
 
-    # Build messages
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": f"""Câu hỏi: {task}
+    # ✅ Stronger user instruction
+    user_prompt = f"""
+Câu hỏi: {task}
 
 {context}
 
-Hãy trả lời câu hỏi dựa vào tài liệu trên."""
-        }
+Yêu cầu:
+- Chỉ sử dụng thông tin trong phần "TÀI LIỆU THAM KHẢO"
+- Không suy diễn, không bổ sung kiến thức ngoài
+- Nếu thông tin không đủ → trả lời: "Không đủ thông tin trong tài liệu nội bộ"
+- Mỗi ý quan trọng phải có citation dạng [tên_file]
+
+Trả lời:
+"""
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt},
     ]
 
     answer = _call_llm(messages)
+
+    # ✅ Post-process: ensure answer is not empty
+    if not answer or len(answer.strip()) < 5:
+        answer = "Không đủ thông tin trong tài liệu nội bộ."
+
+    # ✅ Extract sources (unique)
     sources = list({c.get("source", "unknown") for c in chunks})
+
+    # ✅ Enforce citation if missing
+    if sources and not any(src in answer for src in sources):
+        answer += "\n\n[Nguồn: " + ", ".join(sources) + "]"
+
     confidence = _estimate_confidence(chunks, answer, policy_result)
 
     return {
-        "answer": answer,
+        "answer": answer.strip(),
         "sources": sources,
         "confidence": confidence,
     }
-
 
 def run(state: dict) -> dict:
     """
