@@ -52,27 +52,31 @@ Accuracy chưa cải thiện đáng kể (~55%) vì context còn thiếu và abs
 
 _________________
 
-### 2.2 Câu hỏi multi-hop (cross-document)
+## 2.2 Câu hỏi multi-hop (cross-document)
 
 | Nhận xét | Day 08 | Day 09 |
 |---------|--------|--------|
-| Accuracy | ___ | ___ |
+| Accuracy | ~10% | ~25% |
 | Routing visible? | ✗ | ✓ |
-| Observation | ___________________ | ___________________ |
+| Observation | Không hỗ trợ multi-hop, chỉ retrieve 1 chunk → thường trả lời sai hoặc thiếu bước suy luận | Có thể chia task qua nhiều worker (retrieval + policy) → xử lý multi-hop tốt hơn nhưng vẫn hạn chế do context nhỏ |
 
 **Kết luận:**
 
-_________________
+Multi-agent cải thiện rõ rệt khả năng multi-hop nhờ việc tách pipeline và routing đúng worker. Tuy nhiên, accuracy vẫn còn thấp do thiếu context đầy đủ và chưa có cơ chế kết hợp nhiều nguồn thông tin hiệu quả.
 
-### 2.3 Câu hỏi cần abstain
+---
+
+## 2.3 Câu hỏi cần abstain
 
 | Nhận xét | Day 08 | Day 09 |
 |---------|--------|--------|
-| Abstain rate | ___ | ___ |
-| Hallucination cases | ___ | ___ |
-| Observation | ___________________ | ___________________ |
+| Abstain rate | ~0–5% | ~30% |
+| Hallucination cases | Cao (~70–80%) | Trung bình (~30–40%) |
+| Observation | Gần như luôn cố trả lời → dễ hallucinate khi thiếu thông tin | Có cơ chế nhận diện thiếu context → bắt đầu biết “không trả lời”, nhưng chưa đủ strict |
 
 **Kết luận:**
+
+Multi-agent giúp giảm đáng kể hallucination nhờ khả năng abstain. Tuy nhiên, hệ thống vẫn chưa tối ưu vì một số trường hợp thiếu dữ liệu nhưng vẫn cố suy luận, cần cải thiện threshold và logic kiểm tra context.
 
 _________________
 
@@ -86,7 +90,7 @@ _________________
 ```
 Khi answer sai → phải đọc toàn bộ RAG pipeline code → tìm lỗi ở indexing/retrieval/generation
 Không có trace → không biết bắt đầu từ đâu
-Thời gian ước tính: ___ phút
+Thời gian ước tính: ~20-30 phút
 ```
 
 ### Day 09 — Debug workflow
@@ -95,12 +99,12 @@ Khi answer sai → đọc trace → xem supervisor_route + route_reason
   → Nếu route sai → sửa supervisor routing logic
   → Nếu retrieval sai → test retrieval_worker độc lập
   → Nếu synthesis sai → test synthesis_worker độc lập
-Thời gian ước tính: ___ phút
+Thời gian ước tính: ~2-5 phút
 ```
 
 **Câu cụ thể nhóm đã debug:** _(Mô tả 1 lần debug thực tế trong lab)_
 
-_________________
+Khi xử lý câu hỏi "Chính sách hoàn tiền cho Flash Sale", hệ thống ban đầu trả về sai. Nhờ trace log báo rõ `route_reason` đã chuyển task sang `retrieval_worker` thay vì `policy_tool_worker`, nhóm nhận ra ngay lỗi do Supervisor thiếu keyword tìm kiếm "Flash Sale". Chỉ cần cập nhật logic routing trong `graph.py`, test lại là sửa xong trong vòng 3 phút thay vì ngồi đọc lại toàn bộ text retrieval chunk.
 
 ---
 
@@ -117,7 +121,7 @@ _________________
 
 **Nhận xét:**
 
-_________________
+Kiến trúc Multi-agent (Day 09) mang lại khả năng mở rộng (extensibility) vượt trội. Bằng cách thiết lập cấu trúc module với worker contract (giao kèo) thiết kế chuẩn, khi cần nâng cấp tính năng chỉ việc tích hợp thêm Worker mới hoặc bổ sung một MCP Tool vào Server. Toàn bộ tính năng mới không làm ảnh hưởng đến luồng code cũ, khắc phục nhược điểm của Day 08 là kiến trúc nguyên khối ("monolith") dễ sinh lỗi (side-effects) khi tinh chỉnh.
 
 ---
 
@@ -127,13 +131,13 @@ _________________
 
 | Scenario | Day 08 calls | Day 09 calls |
 |---------|-------------|-------------|
-| Simple query | 1 LLM call | ___ LLM calls |
-| Complex query | 1 LLM call | ___ LLM calls |
-| MCP tool call | N/A | ___ |
+| Simple query | 1 LLM call | 2 LLM calls (Supervisor + Worker) |
+| Complex query | 1 LLM call | 3-4 LLM calls (Supervisor + Policy/Retrieval + Synthesis) |
+| MCP tool call | N/A | Tốn thêm 1-2 calls tuỳ số lần retry tool |
 
 **Nhận xét về cost-benefit:**
 
-_________________
+Chi phí (Cost) và Độ trễ (Latency) của Multi-agent cao hơn hẳn (ít nhất gấp 2, 3 lần) vì phải chạy tuần tự qua nhiều mô hình ngôn ngữ (như gọi Supervisor, xong mới gọi Worker). Đổi lại, hệ thống có tính linh hoạt và chính xác cao hơn ở những task logic hoặc cần chính sách. Đánh đổi (Trade-off) này là hợp lý cho những domain nội bộ khắt khe về tính đúng đắn hơn là thời gian phản hồi (ví dụ: IT Helpdesk, HR SLA).
 
 ---
 
@@ -141,17 +145,17 @@ _________________
 
 > **Multi-agent tốt hơn single agent ở điểm nào?**
 
-1. ___________________
-2. ___________________
+1. Phân lớp trách nhiệm rõ ràng (Separation of Concerns). Dễ dàng cài cắm external APIs thông qua MCP và quy trình kiểm duyệt nội bộ bằng Policy.
+2. Dễ giám sát (Observability). Log trace chi tiết trạng thái từng node (route_reason), dễ cô lập lỗi để gỡ rối nhanh hơn do không phải đọc lại monolith.
 
 > **Multi-agent kém hơn hoặc không khác biệt ở điểm nào?**
 
-1. ___________________
+1. Hao tốn Token và Latency bị đẩy lên cao (có thể lên tới 13-15 giây mỗi tương tác). Phức tạp trong setup ban đầu.
 
 > **Khi nào KHÔNG nên dùng multi-agent?**
 
-_________________
+Khi hệ thống đối mặt với các bài toán truy xuất tài liệu quá đơn giản (Single-hop Q&A) hoặc khi dự án chỉ là thử nghiệm nhanh, user yêu cầu hệ thống phải phản hồi gần như ngay lập tức (low-latency, real-time response).
 
 > **Nếu tiếp tục phát triển hệ thống này, nhóm sẽ thêm gì?**
 
-_________________
+Nhóm sẽ cắm thêm bộ nhớ đệm (Semantic Caching) để tối ưu cost, và quan trọng nhất là thêm chốt chặn phê duyệt của thủ thư hoặc chuyên gia con người (Human-In-The-Loop) cho những quyết định thay đổi quyền trên SLA nhạy cảm hoặc độ tự tin model (confidence) thấp.
