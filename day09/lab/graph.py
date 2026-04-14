@@ -102,16 +102,34 @@ def supervisor_node(state: AgentState) -> AgentState:
     retrieval_kw = [
         "p1", "sla", "ticket", "escalation", "sự cố", "remote", "probation",
     ]
+    # Exception signals — chỉ khi có các tín hiệu này thì policy worker thực sự
+    # cần phân tích (exception / access escalation). Câu hỏi fact đơn thuần
+    # như "hoàn tiền bao nhiêu ngày?" → retrieval là đủ.
+    exception_signals = [
+        "flash sale", "license", "digital", "kỹ thuật số", "subscription",
+        "đã kích hoạt", "activated",
+        "level 2", "level 3", "admin access", "cấp quyền",
+        "emergency", "khẩn cấp", "contractor",
+    ]
     emergency_kw = ["emergency", "khẩn cấp", "2am", "22:", "on-call"]
     err_match = re.search(r"err-[a-z0-9\-]+", task)
 
     policy_hits = [kw for kw in policy_kw if kw in task]
     retrieval_hits = [kw for kw in retrieval_kw if kw in task]
+    exception_hits = [s for s in exception_signals if s in task]
 
-    if policy_hits:
+    if policy_hits and exception_hits:
         route = "policy_tool_worker"
-        route_reason = f"policy/access keyword matched: {policy_hits}"
+        route_reason = (
+            f"policy keyword {policy_hits} + exception signal {exception_hits}"
+        )
         needs_tool = True
+    elif policy_hits:
+        # Có policy keyword nhưng không có exception signal → fact lookup
+        route = "retrieval_worker"
+        route_reason = (
+            f"policy keyword {policy_hits} but no exception signal → retrieval fact"
+        )
     elif retrieval_hits:
         route = "retrieval_worker"
         route_reason = f"retrieval keyword matched: {retrieval_hits}"
@@ -184,10 +202,8 @@ def human_review_node(state: AgentState) -> AgentState:
 # ─────────────────────────────────────────────
 
 from workers.retrieval import run as retrieval_run
+from workers.policy_tool import run as policy_tool_run
 from workers.synthesis import run as synthesis_run
-# TODO: policy_tool.py hiện chỉ là PII gate, chưa có run(state) theo contract.
-#       Khi viết xong, uncomment dòng dưới và xoá placeholder trong policy_tool_worker_node.
-# from workers.policy_tool import run as policy_tool_run
 
 
 def retrieval_worker_node(state: AgentState) -> AgentState:
@@ -196,28 +212,12 @@ def retrieval_worker_node(state: AgentState) -> AgentState:
 
 
 def policy_tool_worker_node(state: AgentState) -> AgentState:
-    """Wrapper gọi policy/tool worker.
+    """Wrapper gọi policy/tool worker thực (workers/policy_tool.py).
 
-    TODO Sprint 2: workers/policy_tool.py chưa implement run(state) theo contract
-    (hiện chỉ có policy_check() — PII gate). Khi có bản đúng contract, thay thân
-    hàm này bằng: return policy_tool_run(state)
+    Worker này có thể gọi MCP tools (search_kb, get_ticket_info) qua
+    mcp_server.dispatch_tool khi needs_tool=True.
     """
-    state["workers_called"].append("policy_tool_worker")
-    state["history"].append("[policy_tool_worker] called (PLACEHOLDER — worker chưa theo contract)")
-
-    state["policy_result"] = {
-        "policy_applies": True,
-        "policy_name": "refund_policy_v4",
-        "exceptions_found": [],
-        "source": "policy_refund_v4.txt",
-    }
-    state.setdefault("worker_io_logs", []).append({
-        "worker": "policy_tool_worker",
-        "input": {"task": state.get("task", "")},
-        "output": {"note": "placeholder — replace when workers/policy_tool.py is contract-ready"},
-        "error": None,
-    })
-    return state
+    return policy_tool_run(state)
 
 
 def synthesis_worker_node(state: AgentState) -> AgentState:

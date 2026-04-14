@@ -229,6 +229,9 @@ def run(state: dict) -> dict:
             if mcp_result.get("data", {}).get("chunks"):
                 chunks = mcp_result["data"]["chunks"]
                 state["retrieved_chunks"] = chunks
+                state["retrieved_sources"] = list({
+                    c.get("source", "unknown") for c in chunks if c
+                })
 
         # Step 2: Analyze
         policy_result = analyze_policy(task, chunks)

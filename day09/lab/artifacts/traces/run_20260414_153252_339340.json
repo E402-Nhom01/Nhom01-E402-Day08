@@ -1,0 +1,81 @@
+{
+  "task": "Sản phẩm kỹ thuật số (license key) có được hoàn tiền không?",
+  "route_reason": "policy/access keyword matched: ['hoàn tiền', 'license']",
+  "risk_high": false,
+  "needs_tool": true,
+  "hitl_triggered": false,
+  "retrieved_chunks": [],
+  "retrieved_sources": [],
+  "policy_result": {
+    "policy_applies": true,
+    "policy_name": "refund_policy_v4",
+    "exceptions_found": [],
+    "source": "policy_refund_v4.txt"
+  },
+  "mcp_tools_used": [],
+  "final_answer": "Không đủ thông tin trong tài liệu nội bộ.",
+  "sources": [],
+  "confidence": 0.1,
+  "history": [
+    "[supervisor] received task: Sản phẩm kỹ thuật số (license key) có được hoàn tiền không?",
+    "[supervisor] route=policy_tool_worker | reason=policy/access keyword matched: ['hoàn tiền', 'license']",
+    "[policy_tool_worker] called (PLACEHOLDER — worker chưa theo contract)",
+    "[retrieval_worker] no results → possible retrieval failure",
+    "[retrieval_worker] retrieved 0 chunks from []",
+    "[synthesis_worker] answer generated, confidence=0.1, sources=[]",
+    "[graph] completed in 15842ms"
+  ],
+  "workers_called": [
+    "policy_tool_worker",
+    "retrieval_worker",
+    "synthesis_worker"
+  ],
+  "supervisor_route": "policy_tool_worker",
+  "latency_ms": 15842,
+  "run_id": "run_20260414_153252_339340",
+  "worker_io_logs": [
+    {
+      "worker": "policy_tool_worker",
+      "input": {
+        "task": "Sản phẩm kỹ thuật số (license key) có được hoàn tiền không?"
+      },
+      "output": {
+        "note": "placeholder — replace when workers/policy_tool.py is contract-ready"
+      },
+      "error": null
+    },
+    {
+      "worker": "retrieval_worker",
+      "input": {
+        "task": "Sản phẩm kỹ thuật số (license key) có được hoàn tiền không?",
+        "top_k": 3
+      },
+      "output": {
+        "chunks_count": 0,
+        "sources": []
+      },
+      "error": null
+    },
+    {
+      "worker": "synthesis_worker",
+      "input": {
+        "task": "Sản phẩm kỹ thuật số (license key) có được hoàn tiền không?",
+        "chunks_count": 0,
+        "has_policy": true
+      },
+      "output": {
+        "answer_length": 41,
+        "sources": [],
+        "confidence": 0.1
+      },
+      "error": null
+    }
+  ],
+  "retrieval_confidence": 0.0,
+  "question_id": "q07",
+  "expected_answer": "Không. Theo chính sách hoàn tiền v4 (Điều 3), sản phẩm kỹ thuật số (license key, subscription) thuộc danh mục ngoại lệ không được hoàn tiền.",
+  "expected_sources": [
+    "policy_refund_v4.txt"
+  ],
+  "expected_route": "policy_tool_worker"
+}

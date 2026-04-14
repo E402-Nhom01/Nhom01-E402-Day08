@@ -53,6 +53,9 @@ def run_test_questions(questions_file: str = "data/test_questions.json") -> list
         try:
             result = run_graph(question_text)
             result["question_id"] = q_id
+            result["expected_answer"] = q.get("expected_answer", "")
+            result["expected_sources"] = q.get("expected_sources", [])
+            result["expected_route"] = q.get("expected_route", "")
 
             # Save individual trace
             trace_file = save_trace(result, f"artifacts/traces")
@@ -65,8 +68,10 @@ def run_test_questions(questions_file: str = "data/test_questions.json") -> list
                 "question": question_text,
                 "expected_answer": q.get("expected_answer", ""),
                 "expected_sources": q.get("expected_sources", []),
+                "expected_route": q.get("expected_route", ""),
                 "difficulty": q.get("difficulty", "unknown"),
                 "category": q.get("category", "unknown"),
+                "test_type": q.get("test_type", ""),
                 "result": result,
             })
 
@@ -81,6 +86,110 @@ def run_test_questions(questions_file: str = "data/test_questions.json") -> list
 
     print(f"\n✅ Done. {sum(1 for r in results if r.get('result'))} / {len(results)} succeeded.")
     return results
+
+
+# ─────────────────────────────────────────────
+# Accuracy scoring — so kết quả với expected_*
+# ─────────────────────────────────────────────
+
+def _is_abstain(answer: str) -> bool:
+    a = (answer or "").lower()
+    return any(k in a for k in [
+        "không đủ thông tin",
+        "không tìm thấy",
+        "liên hệ it helpdesk",
+    ])
+
+
+def score_accuracy(results: list) -> dict:
+    """
+    Chấm accuracy dựa vào test_questions.json:
+      - route_match: supervisor_route == expected_route
+      - source_recall: |retrieved ∩ expected| / |expected|
+      - source_hit: có ít nhất 1 expected source trong retrieved
+      - abstain_correct: câu expected_sources=[] thì hệ có abstain không
+    """
+    total = route_ok = source_hit = abstain_ok = 0
+    source_recall_sum = 0.0
+    abstain_cases = 0
+    per_question = []
+
+    for r in results:
+        res = r.get("result")
+        if not res:
+            continue
+        total += 1
+
+        expected_route = r.get("expected_route", "")
+        actual_route = res.get("supervisor_route", "")
+        route_match = (expected_route == actual_route) if expected_route else None
+        if route_match:
+            route_ok += 1
+
+        expected_sources = set(r.get("expected_sources") or [])
+        retrieved_sources = set(res.get("retrieved_sources") or [])
+
+        # Abstain cases (expected_sources rỗng)
+        if not expected_sources:
+            abstain_cases += 1
+            if _is_abstain(res.get("final_answer", "")):
+                abstain_ok += 1
+            source_recall = None
+            source_hit_q = None
+        else:
+            overlap = expected_sources & retrieved_sources
+            source_recall = len(overlap) / len(expected_sources)
+            source_recall_sum += source_recall
+            source_hit_q = bool(overlap)
+            if source_hit_q:
+                source_hit += 1
+
+        per_question.append({
+            "id": r["id"],
+            "difficulty": r.get("difficulty"),
+            "route_expected": expected_route,
+            "route_actual": actual_route,
+            "route_match": route_match,
+            "sources_expected": sorted(expected_sources),
+            "sources_retrieved": sorted(retrieved_sources),
+            "source_recall": source_recall,
+            "source_hit": source_hit_q,
+            "confidence": res.get("confidence"),
+            "abstain_expected": not bool(expected_sources),
+            "abstain_actual": _is_abstain(res.get("final_answer", "")),
+        })
+
+    n_sourced = total - abstain_cases
+    summary = {
+        "total": total,
+        "route_accuracy": f"{route_ok}/{total} ({100*route_ok//total if total else 0}%)",
+        "source_hit_rate": (
+            f"{source_hit}/{n_sourced} ({100*source_hit//n_sourced if n_sourced else 0}%)"
+        ),
+        "avg_source_recall": round(source_recall_sum / n_sourced, 3) if n_sourced else 0.0,
+        "abstain_precision": (
+            f"{abstain_ok}/{abstain_cases} ({100*abstain_ok//abstain_cases if abstain_cases else 0}%)"
+        ),
+    }
+
+    return {"summary": summary, "per_question": per_question}
+
+
+def print_accuracy(report: dict) -> None:
+    print("\n🎯 Accuracy Scorecard:")
+    for k, v in report["summary"].items():
+        print(f"  {k}: {v}")
+    print("\n  Per-question (miss only):")
+    for q in report["per_question"]:
+        miss = (q["route_match"] is False) or (q["source_hit"] is False) or (
+            q["abstain_expected"] and not q["abstain_actual"]
+        )
+        if miss:
+            print(
+                f"    ✗ {q['id']} [{q['difficulty']}] "
+                f"route={q['route_actual']}(exp={q['route_expected']}) "
+                f"sources={q['sources_retrieved']}(exp={q['sources_expected']})"
+            )
 
 
 # ─────────────────────────────────────────────
@@ -351,8 +460,13 @@ if __name__ == "__main__":
         metrics = analyze_traces()
         print_metrics(metrics)
 
-        # Lưu báo cáo
+        # Accuracy scoring
+        accuracy = score_accuracy(results)
+        print_accuracy(accuracy)
+
+        # Lưu báo cáo (kèm accuracy)
         comparison = compare_single_vs_multi()
+        comparison["accuracy"] = accuracy
         report_file = save_eval_report(comparison)
         print(f"\n📄 Eval report → {report_file}")
         print("\n✅ Sprint 4 complete!")

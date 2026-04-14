@@ -1,0 +1,361 @@
+{
+  "generated_at": "2026-04-14T16:53:27.549891",
+  "day08_single_agent": {
+    "total_questions": 15,
+    "avg_confidence": 0.0,
+    "avg_latency_ms": 0,
+    "abstain_rate": "?",
+    "multi_hop_accuracy": "?"
+  },
+  "day09_multi_agent": {
+    "total_traces": 84,
+    "routing_distribution": {
+      "retrieval_worker": "47/84 (55%)",
+      "policy_tool_worker": "37/84 (44%)"
+    },
+    "avg_confidence": 0.406,
+    "avg_latency_ms": 12717,
+    "mcp_usage_rate": "12/84 (14%)",
+    "hitl_rate": "9/84 (10%)",
+    "top_sources": [
+      [
+        "policy_refund_v4.txt",
+        47
+      ],
+      [
+        "hr_leave_policy.txt",
+        34
+      ],
+      [
+        "sla_p1_2026.txt",
+        33
+      ],
+      [
+        "access_control_sop.txt",
+        31
+      ],
+      [
+        "it_helpdesk_faq.txt",
+        31
+      ]
+    ]
+  },
+  "analysis": {
+    "routing_visibility": "Day 09 có route_reason cho từng câu → dễ debug hơn Day 08",
+    "latency_delta": "TODO: Điền delta latency thực tế",
+    "accuracy_delta": "TODO: Điền delta accuracy thực tế từ grading",
+    "debuggability": "Multi-agent: có thể test từng worker độc lập. Single-agent: không thể.",
+    "mcp_benefit": "Day 09 có thể extend capability qua MCP không cần sửa core. Day 08 phải hard-code."
+  },
+  "accuracy": {
+    "summary": {
+      "total": 15,
+      "route_accuracy": "14/15 (93%)",
+      "source_hit_rate": "13/14 (92%)",
+      "avg_source_recall": 0.929,
+      "abstain_precision": "1/1 (100%)"
+    },
+    "per_question": [
+      {
+        "id": "q01",
+        "difficulty": "easy",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "sla_p1_2026.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "policy_refund_v4.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.46,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q02",
+        "difficulty": "easy",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "policy_refund_v4.txt"
+        ],
+        "sources_retrieved": [
+          "hr_leave_policy.txt",
+          "it_helpdesk_faq.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.53,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q03",
+        "difficulty": "easy",
+        "route_expected": "policy_tool_worker",
+        "route_actual": "policy_tool_worker",
+        "route_match": true,
+        "sources_expected": [
+          "access_control_sop.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "it_helpdesk_faq.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.38,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q04",
+        "difficulty": "easy",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "it_helpdesk_faq.txt"
+        ],
+        "sources_retrieved": [
+          "hr_leave_policy.txt",
+          "it_helpdesk_faq.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.51,
+        "abstain_expected": false,
+        "abstain_actual": true
+      },
+      {
+        "id": "q05",
+        "difficulty": "easy",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "hr_leave_policy.txt"
+        ],
+        "sources_retrieved": [
+          "hr_leave_policy.txt",
+          "it_helpdesk_faq.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.51,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q06",
+        "difficulty": "medium",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "sla_p1_2026.txt"
+        ],
+        "sources_retrieved": [
+          "it_helpdesk_faq.txt",
+          "policy_refund_v4.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.58,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q07",
+        "difficulty": "medium",
+        "route_expected": "policy_tool_worker",
+        "route_actual": "policy_tool_worker",
+        "route_match": true,
+        "sources_expected": [
+          "policy_refund_v4.txt"
+        ],
+        "sources_retrieved": [
+          "it_helpdesk_faq.txt",
+          "policy_refund_v4.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.46,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q08",
+        "difficulty": "medium",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "sla_p1_2026.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "hr_leave_policy.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 0.0,
+        "source_hit": false,
+        "confidence": 0.3,
+        "abstain_expected": false,
+        "abstain_actual": true
+      },
+      {
+        "id": "q09",
+        "difficulty": "hard",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "hr_leave_policy.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": null,
+        "source_hit": null,
+        "confidence": 0.3,
+        "abstain_expected": true,
+        "abstain_actual": true
+      },
+      {
+        "id": "q10",
+        "difficulty": "medium",
+        "route_expected": "policy_tool_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": false,
+        "sources_expected": [
+          "policy_refund_v4.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "hr_leave_policy.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.45,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q11",
+        "difficulty": "medium",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "sla_p1_2026.txt"
+        ],
+        "sources_retrieved": [
+          "hr_leave_policy.txt",
+          "policy_refund_v4.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.48,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q12",
+        "difficulty": "hard",
+        "route_expected": "policy_tool_worker",
+        "route_actual": "policy_tool_worker",
+        "route_match": true,
+        "sources_expected": [
+          "policy_refund_v4.txt"
+        ],
+        "sources_retrieved": [
+          "hr_leave_policy.txt",
+          "it_helpdesk_faq.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.54,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q13",
+        "difficulty": "hard",
+        "route_expected": "policy_tool_worker",
+        "route_actual": "policy_tool_worker",
+        "route_match": true,
+        "sources_expected": [
+          "access_control_sop.txt",
+          "sla_p1_2026.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "it_helpdesk_faq.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.46,
+        "abstain_expected": false,
+        "abstain_actual": false
+      },
+      {
+        "id": "q14",
+        "difficulty": "medium",
+        "route_expected": "retrieval_worker",
+        "route_actual": "retrieval_worker",
+        "route_match": true,
+        "sources_expected": [
+          "hr_leave_policy.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "hr_leave_policy.txt",
+          "policy_refund_v4.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.3,
+        "abstain_expected": false,
+        "abstain_actual": true
+      },
+      {
+        "id": "q15",
+        "difficulty": "hard",
+        "route_expected": "policy_tool_worker",
+        "route_actual": "policy_tool_worker",
+        "route_match": true,
+        "sources_expected": [
+          "access_control_sop.txt",
+          "sla_p1_2026.txt"
+        ],
+        "sources_retrieved": [
+          "access_control_sop.txt",
+          "it_helpdesk_faq.txt",
+          "sla_p1_2026.txt"
+        ],
+        "source_recall": 1.0,
+        "source_hit": true,
+        "confidence": 0.43,
+        "abstain_expected": false,
+        "abstain_actual": false
+      }
+    ]
+  }
+}
