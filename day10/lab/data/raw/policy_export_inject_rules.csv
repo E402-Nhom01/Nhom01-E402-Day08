@@ -1,0 +1,6 @@
+chunk_id,doc_id,chunk_text,effective_date,exported_at
+1,policy_refund_v4,"Chunk có ký tự mojibake do sai encoding: hoàn ti�n 7 ngày.",2026-02-01,2026-04-10T08:00:00
+2,it_helpdesk_faq,"Chunk có exported_at sai format để test rule R8.",2026-02-01,Thursday 10 April 2026
+3,sla_p1_2026,"Chunk có effective_date bị typo thành năm 2099 để test rule R9.",2099-01-01,2026-04-10T08:00:00
+4,hr_leave_policy,"Nhân viên dưới 3 năm kinh nghiệm được 12 ngày phép năm theo chính sách 2026.",2026-02-01,2026-04-10T08:00:00
+5,policy_refund_v4,"Yêu cầu được gửi trong vòng 7 ngày làm việc kể từ thời điểm xác nhận đơn hàng.",2026-02-01,2026-04-10T08:00:00
