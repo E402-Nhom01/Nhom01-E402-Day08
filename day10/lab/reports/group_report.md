@@ -4,11 +4,11 @@
 **Thành viên:**
 | Tên | Vai trò (Day 10) | Email |
 |-----|------------------|-------|
-| Pham Doan Phuong Anh | Ingestion / Raw Owner | ___ |
-| Nguyen Duc Dung | Cleaning & Quality Owner | ___ |
+| Truong Minh Tien | Cleaning & Quality Owner | marcuschill1823@gmail.com |
 | Huynh Thai Bao | Embed & Idempotency Owner | ___ |
-| Truong Minh Tien | Monitoring / Docs Owner | marcuschill1823@gmail.com |
-| Nguyen Duc Tri | Monitoring / Docs Owner | ductri412004@gmail.com |
+| Nguyen Duc Tri | Docs / Contract Owner | ductri412004@gmail.com |
+| Pham Doan Phuong Anh | Ingestion / Raw Owner | ___ |
+| Nguyen Duc Dung | Monitoring / Freshness Owner | ___ |
 
 **Ngày nộp:** 2026-04-15
 **Repo:** ___________
