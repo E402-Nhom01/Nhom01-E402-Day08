@@ -1,13 +1,14 @@
 # Báo Cáo Nhóm — Lab Day 10: Data Pipeline & Data Observability
 
-**Tên nhóm:** ___________
+**Tên nhóm:** E402 - Nhóm 1
 **Thành viên:**
 | Tên | Vai trò (Day 10) | Email |
 |-----|------------------|-------|
-| ___ | Ingestion / Raw Owner | ___ |
-| ___ | Cleaning & Quality Owner | ___ |
+| Pham Doan Phuong Anh | Ingestion / Raw Owner | ___ |
+| Nguyen Duc Dung | Cleaning & Quality Owner | ___ |
 | Huynh Thai Bao | Embed & Idempotency Owner | ___ |
 | Truong Minh Tien | Monitoring / Docs Owner | marcuschill1823@gmail.com |
+| Nguyen Duc Tri | Monitoring / Docs Owner | marcuschill1823@gmail.com |
 
 **Ngày nộp:** 2026-04-15
 **Repo:** ___________
